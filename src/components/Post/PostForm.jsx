@@ -6,7 +6,7 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { Link } from 'react-router-dom';
 import { Alert, Button, OutlinedInput, Snackbar } from '@mui/material';
-import { PostWithAuth } from '../../services/HttpService';
+import { PostWithAuth, RefreshToken } from '../../services/HttpService';
 import { useAuth } from '../../hooks/AuthProvider';
 
 export const PostForm = ({ userId, userName, refreshPosts }) => {
@@ -30,12 +30,33 @@ export const PostForm = ({ userId, userName, refreshPosts }) => {
       content: content,
     })
       .then((response) => {
-        response.json();
-        setOpen(true);
-        refreshPosts();
+        if (response.status == 401) {
+          RefreshToken(user.userId, user.refreshToken)
+            .then((res) => {
+              if (res.status == 401) {
+                console.log('refresh expired');
+                user.logoutAction(true);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              user.refreshAccessToken(data.accessToken);
+              PostWithAuth(user.accessToken, '/api/posts', {
+                userId: userId,
+                title: title,
+                content: content,
+              })
+                .then((response) => response.json())
+                .then(() => {
+                  setOpen(true);
+                  refreshPosts();
+                });
+            });
+        }
+        return response.json();
       })
-      .catch((error) => {
-        console.error('Error:', error);
+      .then(() => {
+        setOpen(true);
         refreshPosts();
       });
   };

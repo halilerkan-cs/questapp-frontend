@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PostWithAuth } from '../../services/HttpService';
+import { PostWithAuth, RefreshToken } from '../../services/HttpService';
 import { useAuth } from '../../hooks/AuthProvider';
 
 const CommentForm = ({ postId, userId, userName, refreshComments }) => {
@@ -25,12 +25,39 @@ const CommentForm = ({ postId, userId, userName, refreshComments }) => {
       postId: postId,
       userId: userId,
       comment: comment,
-    }).then((response) => {
-      response.json();
-      setComment('');
-      setOpen(true);
-      refreshComments();
-    });
+    })
+      .then((response) => {
+        if (response.status == 401) {
+          RefreshToken(user.userId, user.refreshToken)
+            .then((res) => {
+              if (res.status == 401) {
+                console.log('refresh expired');
+                user.logoutAction(true);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              user.refreshAccessToken(data.accessToken);
+              PostWithAuth(user.accessToken, '/api/comments', {
+                postId: postId,
+                userId: userId,
+                comment: comment,
+              })
+                .then((response) => response.json())
+                .then(() => {
+                  setComment('');
+                  setOpen(true);
+                  refreshComments();
+                });
+            });
+        }
+        return response.json();
+      })
+      .then(() => {
+        setComment('');
+        setOpen(true);
+        refreshComments();
+      });
   };
 
   const handleSubmit = () => {

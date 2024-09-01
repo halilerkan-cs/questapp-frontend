@@ -15,7 +15,12 @@ import { Container } from '@mui/material';
 import Comment from '../Comment/Comment';
 import CommentForm from '../Comment/CommentForm';
 import { useAuth } from '../../hooks/AuthProvider';
-import { DeleteWithAuth, Get, PostWithAuth } from '../../services/HttpService';
+import {
+  DeleteWithAuth,
+  Get,
+  PostWithAuth,
+  RefreshToken,
+} from '../../services/HttpService';
 
 const ExpandMore = styled((props) => {
   // eslint-disable-next-line no-unused-vars
@@ -56,18 +61,66 @@ export const Post = ({ postId, title, content, userId, userName, likes }) => {
     PostWithAuth(user.accessToken, '/api/likes', {
       postId: postId,
       userId: user.userId,
-    }).then((response) => {
-      response.json();
-      setLikeCount(likeCount + 1);
-      setIsLiked(true);
-    });
+    })
+      .then((response) => {
+        if (response.status == 401) {
+          RefreshToken(user.userId, user.refreshToken)
+            .then((res) => {
+              if (res.status == 401) {
+                console.log('refresh expired');
+                user.logoutAction(true);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              user.refreshAccessToken(data.accessToken);
+              PostWithAuth(user.accessToken, '/api/likes', {
+                postId: postId,
+                userId: user.userId,
+              })
+                .then((response) => response.json())
+                .then(() => {
+                  setLikeCount(likeCount + 1);
+                  setIsLiked(true);
+                });
+            });
+        }
+        return response.json();
+      })
+      .then(() => {
+        setLikeCount(likeCount + 1);
+        setIsLiked(true);
+      });
   };
 
   const unlikePost = () => {
-    DeleteWithAuth(user.accessToken, `/api/likes/${likeId}`, {}).then(() => {
-      setLikeCount(likeCount - 1);
-      setIsLiked(false);
-    });
+    DeleteWithAuth(user.accessToken, `/api/likes/${likeId}`, {})
+      .then((response) => {
+        if (response.status == 401) {
+          RefreshToken(user.userId, user.refreshToken)
+            .then((res) => {
+              if (res.status == 401) {
+                console.log('refresh expired');
+                user.logoutAction(true);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              user.refreshAccessToken(data.accessToken);
+              DeleteWithAuth(user.accessToken, `/api/likes/${likeId}`, {})
+                .then((response) => response.json())
+                .then(() => {
+                  setLikeCount(likeCount - 1);
+                  setIsLiked(false);
+                });
+            });
+        }
+        return response.json();
+      })
+      .then(() => {
+        setLikeCount(likeCount - 1);
+        setIsLiked(false);
+      });
   };
 
   const refreshComments = () => {
