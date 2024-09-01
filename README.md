@@ -6,4 +6,4 @@ This "QuestApp" application simulates a blog application.
 * **see notifications**, 
 * **customize their profile**.
 
-Reach frontend code here: [Backend Repo](https://github.com/halilerkan-cs/questapp-backend)
+Reach backend code here: [Backend Repo](https://github.com/halilerkan-cs/questapp-backend)
