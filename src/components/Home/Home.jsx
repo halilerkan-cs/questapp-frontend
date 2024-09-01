@@ -43,14 +43,14 @@ const Home = () => {
       style={{
         backgroundColor: '#f0f5ff',
         width: '100%',
+        minHeight: '100%',
         display: 'flex',
         flexWrap: 'wrap',
         flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         gap: '2em',
-        paddingTop: '15px',
-        paddingBottom: '15px',
+        padding: '20px 0 20px',
       }}
     >
       {user.userId != null && (
